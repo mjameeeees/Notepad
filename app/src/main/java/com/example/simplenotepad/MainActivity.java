@@ -41,13 +41,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        EdgeToEdge.enable(this);
+        EdgeToEdge.enable(this); // Enable edge-to-edge support (for system bar handling)
         setContentView(R.layout.activity_main);
+
+        // Handle window insets for system bars (navigation bar and status bar)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
         // Initialize database helper
         dbHelper = new DatabaseHelper(this);
 
@@ -62,26 +65,40 @@ public class MainActivity extends AppCompatActivity {
         // Load existing notes from the database
         noteList = loadAllNotes();
 
-        // Set adapter for RecyclerView
-        adapter = new NoteAdapter(noteList);
+        // Set the adapter for RecyclerView with the OnItemClickListener
+        adapter = new NoteAdapter(noteList, new NoteAdapter.OnItemClickListener() {
+            @Override
+            public void onItemDelete(int position) {
+                // Get the noteId from the note at the given position
+                int noteId = getNoteIdFromPosition(position);
+
+                // Delete from the database
+                dbHelper.deleteNoteById(noteId);
+
+                // Delete from the list and notify adapter
+                noteList.remove(position);
+                adapter.notifyItemRemoved(position);  // Notify adapter to remove item
+            }
+        });
         recyclerView.setAdapter(adapter);
 
         // Save new note when the button is clicked
-        buttonSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String newNote = editTextNote.getText().toString();
-                if (!newNote.isEmpty()) {
-                    saveNoteToDatabase(newNote);
-                    noteList.add(newNote);
-                    adapter.notifyItemInserted(noteList.size() - 1); // Add the new note to the list
-                    editTextNote.setText(""); // Clear the input field
-                }
+        buttonSave.setOnClickListener(v -> {
+            String newNote = editTextNote.getText().toString();
+            if (!newNote.isEmpty()) {
+                saveNoteToDatabase(newNote);  // Save the new note to the database
+                noteList.add(newNote);  // Add the new note to the list
+                adapter.notifyItemInserted(noteList.size() - 1);  // Notify the adapter that an item is inserted
+                editTextNote.setText("");  // Clear the input field
             }
         });
+    }
 
-        // Load the saved note from the database (if any)
 
+    private int getNoteIdFromPosition(int position) {
+        // Assuming noteList contains notes as Strings, you should modify this if your notes have more data
+        // Example: If noteList contains a list of Note objects, you can get the ID from there
+        return position;  // This is just an example, modify according to your logic
     }
 
     // Method to save the note to the SQLite database
@@ -114,7 +131,5 @@ public class MainActivity extends AppCompatActivity {
 
         return notesList;
     }
-
-
 
 }

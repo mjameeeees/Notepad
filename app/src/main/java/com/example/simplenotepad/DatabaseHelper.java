@@ -35,4 +35,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    // Method to delete a note by its ID
+    public void deleteNoteById(int noteId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        // Delete note from the database
+        db.delete(TABLE_NOTES, COLUMN_ID + " = ?", new String[]{String.valueOf(noteId)});
+        db.close();
+    }
 }
